@@ -15,6 +15,10 @@ from finanzas import *
 # (1) Se define ruta; (2) Se lee archivo CSV; y (3) Se cambia la columna Fecha a índice
 main_dir              = '/home/carlos/workbenchPython/finanzas/datos/'
 fs                    = pd.read_csv(main_dir+'FS.csv', parse_dates=['Fecha'], dayfirst=True, decimal=".", thousands=',')
+# Convertir con manejo de errores, errors="coerce" convierte valores inválidos en NaN, evitando fallos.
+fs['Depósito']        = pd.to_numeric(fs['Depósito'], errors='coerce').fillna(0)  # Convierte, pone NaN en errores
+fs['Saldo']           = pd.to_numeric(fs['Saldo'], errors='coerce').fillna(0)  # Convierte, pone NaN en errores
+#set index
 fs                    = fs.set_index('Fecha')                   
 
 # PREPARACION DE DATOS
@@ -50,10 +54,6 @@ fs.index              = fs.index.map(cambiar_fecha)
 # 2/
 mask                  = (fs.index.month == 1) & (fs.index.day == 1) 
 fs.loc[mask, ['Depósito', 'Saldo']] = fs.loc[mask, ['Saldo', 'Depósito']].values
-# Convertir con manejo de errores, errors="coerce" convierte valores inválidos en NaN, evitando fallos.
-fs['Depósito']        = pd.to_numeric(fs['Depósito'], errors='coerce').fillna(0)  # Convierte, pone NaN en errores
-fs['Saldo']           = pd.to_numeric(fs['Saldo'], errors='coerce').fillna(0)  # Convierte, pone NaN en errores
-
 # 3/
 fs['dias']            = 360-fs.index.dayofyear
 
@@ -62,18 +62,18 @@ fs['dias']            = 360-fs.index.dayofyear
 fecha_ini             =  [datetime(k,1,1)   for k in fsr.index]
 fecha_fin             =  [datetime(k,12,30) for k in fsr.index]
 # Se utilizan los intereses publicados por ACOFINGES
-intereses_anual         = {2022:6.77, 2023:6.5, 2024:6.38} #Interés diario 
+intereses_anual       =  {2022:6.77, 2023:6.5, 2024:6.38} #Interés diario 
 
 # Mediane un lazo for, se calcula el interés compuesto anual, excluyendo el 31 de diciembre
 resultados            = []
 for k, year in enumerate(fsr.index):
+    interes           = intereses_anual.get(year)/365 #interes diario
     mask              = (fs.index >= fecha_ini[k]) & (fs.index <= fecha_fin[k])
     anual             = fs.loc[mask].copy()
-    print(anual.dtypes)
-    anual['compuesto']= compound_interest(anual['Depósito'], intereses_anual.get(year)/365, anual['dias'])
+    # Aplicar la función fila por fila
+    anual['compuesto']= anual.apply(lambda row: compound_interest(row['Depósito'], interes, row['dias']), axis=1).round(2)
     anual['resultado']= anual['compuesto']-anual['Depósito']
     resultados.append(anual['resultado'].sum().round(2))
-
 
 # Se extraen los rendimientos anuales calculados por ACOFIGES
 acofinge              = fs.loc[(fs.index.month == 1) & (fs.index.day == 1)]['Saldo'].values.tolist()
@@ -105,7 +105,8 @@ new_rows              = pd.DataFrame(depo_list, index=pd.to_datetime(fecha_list)
 simula                = pd.concat([simula, new_rows])
 # Con el nuevo DataFrame que contiene los 'depósitos' simulados se ejecutan los mismos pasos que la PARTE II.
 simula['dias']        = 360-simula.index.dayofyear
-simula['compuesto']   = compound_interest(simula['Depósito'], new_interes, simula['dias'])
+    # Aplicar la función fila por fila
+simula['compuesto']   = simula.apply(lambda row: compound_interest(row['Depósito'], new_interes, row['dias']), axis=1).round(2)
 simula['resultado']   = simula['compuesto']-simula['Depósito']
 
 # Se agrega el resultado de la simulacion a la parte I   

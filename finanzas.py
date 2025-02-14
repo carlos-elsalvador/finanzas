@@ -25,8 +25,6 @@ def cambiar_fecha(fecha):
     return fecha
 
 
-
-
 def compound_interest(principal, rate, time):
     """
     Función para calcular el interés compuesto. 
@@ -59,6 +57,7 @@ def compound_interest(principal, rate, time):
     # Cálculo del interés compuesto
     return principal * (pow((1 + rate / 100), time))
 
+
 def plot_barras(df, apilado=True, rotulos=['','','']):
     """
     Función para dibujar gráfico de barras.
@@ -74,6 +73,7 @@ def plot_barras(df, apilado=True, rotulos=['','','']):
     ax.set_title(rotulos[2])
     ax.grid()
     plt.show()
+
   
 def ejercicio_anual_1(datos, interes):
     """
