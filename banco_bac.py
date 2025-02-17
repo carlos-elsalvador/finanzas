@@ -1,7 +1,8 @@
-from CarlosAnalytic_pandas import *
+#from CarlosAnalytic_pandas import *
+from finanzas import *
 #Fecha Transaccion,Fecha Aplicada,Hora,Transaccion,Referencia,Cargo,Abono,Saldo,Canal,Categoria
 
-main_dir       = '/home/carlos/Descargas/workbenchPython/eie_pandas/demografia/'
+main_dir       = '/home/carlos/workbenchPython/finanzas/datos/'
 #df             = pd.read_csv(main_dir+'bac.csv', parse_dates=['Fecha Transaccion', 'Fecha Aplicada'], dayfirst=True)  
 df             = pd.read_csv(main_dir+'BAC_corr.csv', parse_dates=['Fecha Transaccion', 'Fecha Aplicada'], dayfirst=True)  
 #Tipos de Transacción: Cargo o Abono
