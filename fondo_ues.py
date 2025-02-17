@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import datetime as dt
 
-main_dir       = '/home/carlos/Descargas/workbenchPython/eie_pandas/demografia/'
+main_dir       = '/home/carlos/workbenchPython/finanzas/datos/'
 df             = pd.read_csv(main_dir+'cotiza.csv', parse_dates=['Fecha'], dayfirst=True)  
 
 # Set index
