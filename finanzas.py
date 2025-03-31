@@ -8,6 +8,115 @@ import seaborn as sns
 import scipy.stats
 import numpy as np
 
+def top_subcategories(df, category, top_n=5):
+    """
+    Filtra y agrupa datos por subcategorías dentro de una categoría específica y devuelve las más relevantes.
+
+    Args:
+        df (pd.DataFrame): DataFrame que contiene los datos.
+        category (str): Categoría sobre la cual se agruparán los datos.
+        top_n (int): Número de subcategorías principales a devolver.
+
+    Returns:
+        pd.DataFrame: DataFrame filtrado con las principales subcategorías de la categoría seleccionada.
+    """
+    # Validar que 'df' sea un DataFrame
+    if not isinstance(df, pd.DataFrame):
+        raise ValueError(f"El argumento 'df' debe ser un DataFrame, pero se recibió: {type(df)}")
+    
+    # Validar que 'category' sea una cadena de texto
+    if not isinstance(category, str):
+        raise ValueError(f"El argumento 'category' debe ser una cadena de texto, pero se recibió: {type(category)}")
+    
+    # Validar que 'top_n' sea un número entero positivo
+    if not isinstance(top_n, int) or top_n <= 0:
+        raise ValueError(f"El argumento 'top_n' debe ser un número entero positivo, pero se recibió: {top_n}")
+    
+    # Validar que las columnas requeridas existan en el DataFrame
+    required_columns = ['Categoria', 'Etiqueta', 'Cargo']
+    missing_columns = [col for col in required_columns if col not in df.columns]
+    if missing_columns:
+        raise ValueError(f"El DataFrame no contiene las columnas requeridas: {', '.join(missing_columns)}")
+    
+    # Filtrar datos por la categoría específica
+    filtered_df = df[df['Categoria'] == category]
+    
+    # Validar que haya datos en la categoría filtrada
+    if filtered_df.empty:
+        raise ValueError(f"No se encontraron datos para la categoría: {category}")
+    
+    # Agrupar por etiquetas y calcular el total por subcategoría
+    subcategory_totals = filtered_df.groupby('Etiqueta')['Cargo'].sum()
+    
+    # Obtener las subcategorías principales
+    top_subcategories = subcategory_totals.nlargest(top_n).index
+    
+    # Devolver el DataFrame filtrado con las principales subcategorías
+    return filtered_df[filtered_df['Etiqueta'].isin(top_subcategories)]
+
+
+def classify_transaction(transaction, categories):
+    """
+    Función para clasificar transacciones. Se clasifican las transacciones de las operaciones bancarias en diferntes categorias. 
+    Devuelve: Se incrementa el dataframe en una columna, con la clasificacion de la transaccion.
+    
+    Descripción: Dado la dispersion de las transacciones se hace necesario agruparlas en categorias, mediante un diccionario. 
+    Ultima revision: 30/3/2025
+    """
+
+    # Validar que 'categories' sea un diccionario
+    if not isinstance(categories, dict):
+        raise ValueError(f"El argumento 'categories' debe ser un diccionario, pero se recibió: {type(categories)}")
+    
+    # Verificar que el diccionario no esté vacío
+    if not categories:
+        raise ValueError("El diccionario 'categories' está vacío, no se pueden realizar clasificaciones.")
+        
+    # Verificar que el argumento 'transaction' sea válido
+    if not isinstance(transaction, str):
+        raise ValueError(f"La transacción debe ser una cadena de texto, pero se recibió: {type(transaction)}")
+    
+    # Asegurar que 'transaction' no esté vacía
+    if not transaction.strip():
+        return "Otros gastos"
+
+    # Convertir la transacción a mayúsculas para evitar errores de comparación
+    transaction = transaction.upper()
+
+    # Proceso de clasificación
+    for category, keywords in categories.items():
+        if any(keyword in transaction for keyword in keywords):
+            return category
+    
+    # Categoría por defecto si no hay coincidencias
+    return "Otros gastos"
+
+def extract_label(transaction):
+    """
+    Extrae una etiqueta de una transacción basada en su formato.
+
+    Args:
+        transaction (str): Descripción de la transacción.
+
+    Returns:
+        str: Etiqueta extraída de la transacción o 'OTHER' si no se encuentra un formato esperado.
+    """
+    # Validar que 'transaction' sea una cadena de texto
+    if not isinstance(transaction, str):
+        raise ValueError(f"La transacción debe ser una cadena de texto, pero se recibió: {type(transaction)}")
+
+    # Asegurar que 'transaction' no esté vacía
+    if not transaction.strip():
+        return 'OTHER'
+
+    # Extraer etiqueta si existe el carácter ':'
+    if ':' in transaction:
+        return transaction.split(':')[0] + ':'
+    
+    # Etiqueta por defecto
+    return 'OTHER'
+
+
 def cambiar_fecha(fecha):
     """
     Función para cambiar fecha. Se cambia la fecha de la última operación del año, 31/12 al primer día del siguiente 01/01.
