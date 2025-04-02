@@ -9,40 +9,51 @@ categories = {
     "Ropa y accesorios": ["ROPA-ZAP:", "PERFUMERIA:"],
     "Viajes/transporte": ["VUELO:", "HOTEL:", "AUTOBUS:", "TREN:", "VISA:","UBER:"],    
     "Retiro de cajeros": ["RETIRO NAC.:","RETIRO INT.:"],
-    "Transferencias": ["TRANSF.:","DONACION:", "DEPOSITO DAP"],
+#    "Transferencias": ["TRANSF.:","DONACION:", "DEPOSITO DAP"],
+    "Ingresos":["UES:", "CDA:","REEMBOLSO:", "REINTEGRO:"],
     "Otros gastos": []  # Para transacciones que no encajen en las anteriores
 }
 
 
 main_dir              = '/home/carlos/workbenchPython/finanzas/datos/'
 df                    = pd.read_csv(main_dir+'bac.csv', parse_dates=['Fecha_Tran'], dayfirst=True, decimal=".", thousands=',')  
-#Cargos
-ca                    = df[['Fecha_Tran', 'Transaccion', 'Cargo', 'Saldo']]
-ca                    = ca[ca["Cargo"].notna()]
 
-# Filtra datos anteriores a 2016
-mask                  = ca['Fecha_Tran'] > datetime(2016,1,1)
-ca                    = ca.loc[mask].copy()
+# Filtra datos anteriores a 2016 en base de datos original
+mask                  = df['Fecha_Tran'] > datetime(2016,1,1)
+df                    = df.loc[mask].copy()
 
-# Asegurar que no haya valores nulos en la columna "Transaccion"
-ca["Transaccion"]     = ca["Transaccion"].fillna("").str.upper()
+# Asegurar que no haya valores nulos en la columna "Transaccion" y convertir a mayusculas
+df["Transaccion"]     = df["Transaccion"].fillna("").str.upper()
 
 # Aplicar clasificación
-ca["Categoria"]       = ca["Transaccion"].apply(lambda transaction: classify_transaction(transaction, categories))
+df["Categoria"]       = df["Transaccion"].apply(lambda transaction: classify_transaction(transaction, categories))
 
 # Añadir una columna con las etiquetas extraídas
-ca['Etiqueta']        = ca['Transaccion'].apply(extract_label)
+df['Etiqueta']        = df['Transaccion'].apply(extract_label)
 
-# Eliminar la categoría "Otros gastos" y "Transferencias"
-ca                    = ca[ca["Categoria"] != "Otros gastos"] 
-ca                    = ca[ca["Categoria"] != "Transferencias"] 
+# Extraer año y mes de la columna Fecha_Tran
+df['Año']             = pd.to_datetime(df['Fecha_Tran']).dt.year
+df['Mes']             = pd.to_datetime(df['Fecha_Tran']).dt.month
 
-# Agrupar por categoría y sumar los gastos
+# Eliminar la categoría "Otros gastos" debido a que son gastos aun no identificados o simplemente se han ignorado en categories
+df                    = df[df["Categoria"] != "Otros gastos"] 
+
+# Se filtra para dejar unicamente un dataframe con los Cargos
+ca                    = df[df["Cargo"].notna()]
+
+# Agrupar por categoría y sumar los gastos anuales
 gastos_por_categoria  = ca.groupby("Categoria")["Cargo"].sum().sort_values(ascending=False)
+resumen_anual_ca      = ca.groupby('Año')[['Cargo']].sum()
+resumen_anual_ab      = df.groupby('Año')[['Abono']].sum()
+resumen_anual_ca['Ingresos'] = resumen_anual_ab['Abono']
 
-#PLOT. Barras. Gráfico de barras
+# 1/ PLOT, BARRAS. GASTOS Vs INGRESOS. Agrupar por año para sumar gastos e ingresos
+plot_barras(resumen_anual_ca, apilado=False, rotulos=['Year','US$','Ingresos vs Gastos'])
+
+# 2/ PLOT, BARRAS. CATEGORIAS
 plt.figure(figsize=(12, 3))
 sns.barplot(x=gastos_por_categoria.values, y=gastos_por_categoria.index, hue=gastos_por_categoria.index, palette="viridis")
+plt.grid()
 plt.xlabel("Total Gastado ($)", fontsize=12)
 plt.ylabel("Categoría", fontsize=12)
 plt.xticks(fontsize=10)  # Ajusta tamaño de números del eje X
@@ -50,18 +61,14 @@ plt.yticks(fontsize=10)  # Ajusta tamaño de texto en eje Y
 plt.title("Distribución de Gastos por Categoría")
 plt.show()
 
-#PLOT. PIE CHART
+# 3/ PLOT. PIE CHART
 plt.figure(figsize=(10, 6))
 gastos_por_categoria.plot(kind="pie", autopct="%1.1f%%", startangle=140, cmap="tab10")
 plt.ylabel("")  # Oculta el label de y
 plt.title("Distribución de Gastos por Categoría")
 plt.show()
 
-#PLOT. HEAT MAP, Por año y categoría, sumando los gastos.
-# Extraer año y mes
-ca["Año"] = ca["Fecha_Tran"].dt.year
-ca["Mes"] = ca["Fecha_Tran"].dt.month
-
+# 4/ PLOT, HEAT MAP. Por año y categoría, sumando los gastos.
 heatmap_data_anual = ca.pivot_table(index="Categoria", columns="Año", values="Cargo", aggfunc="sum", fill_value=0)
 plt.figure(figsize=(12, 4))
 sns.heatmap(heatmap_data_anual, cmap="coolwarm", annot=True, fmt=".0f", linewidths=0.5)

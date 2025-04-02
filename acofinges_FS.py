@@ -79,6 +79,7 @@ for k, year in enumerate(fsr.index):
 acofinge              = fs.loc[(fs.index.month == 1) & (fs.index.day == 1)]['Saldo'].values.tolist()
 #year
 year                  = fs.loc[(fs.index.month == 1) & (fs.index.day == 1)].index.year.values.tolist()
+year                  = [y - 1 for y in year]
 # Se crea nuevo dataframe con ambos resultados
 compara              = pd.DataFrame({'Año':year,'ACOFINGES':acofinge,'CALCULADO':resultados})
 # Set index

@@ -175,7 +175,7 @@ def plot_barras(df, apilado=True, rotulos=['','','']):
             stacked:   Se permite dibujar las barras contiguas o apiladas
             rotulos:   Se etiquetan los ejes y el título. 
     """
-    ax                = df.plot(kind='bar', stacked=apilado, color=['green','red','blue','yellow'], rot=0)
+    ax                = df.plot(kind='bar', stacked=apilado, rot=0)    
     ax.legend(loc='upper left')
     ax.set_xlabel(rotulos[0])
     ax.set_ylabel(rotulos[1])
@@ -216,7 +216,6 @@ def ejercicio_anual_1(datos, interes):
     datos['resultado'] = datos['compuesto'] - datos['Depósito']
     return datos
 
-import pandas as pd
 
 def ejercicio_anual(datos, interes):
     """
