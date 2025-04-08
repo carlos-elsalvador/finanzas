@@ -10,15 +10,25 @@ import numpy as np
 
 def top_subcategories(df, category, top_n=5):
     """
-    Filtra y agrupa datos por subcategorías dentro de una categoría específica y devuelve las más relevantes.
+    Filtra y agrupa datos por subcategorías dentro de una categoría específica y devuelve las (top_n) más relevantes.
 
-    Args:
-        df (pd.DataFrame): DataFrame que contiene los datos.
-        category (str): Categoría sobre la cual se agruparán los datos.
-        top_n (int): Número de subcategorías principales a devolver.
+    Entradas:
+            df (pd.DataFrame): DataFrame que contiene los datos, ['Categoria', 'Etiqueta', 'Cargo'].
+            category (str)   : Categoría sobre la cual se agruparán los datos.
+            top_n (int)      : Número de subcategorías principales a devolver.
 
-    Returns:
-        pd.DataFrame: DataFrame filtrado con las principales subcategorías de la categoría seleccionada.
+    Devuelve:
+            pd.DataFrame     : DataFrame filtrado con las principales subcategorías de la categoría seleccionada.
+
+    Raises:
+        ValueError: Si el argumento `df` no es un DataFrame.
+        ValueError: Si el argumento `category` no es una cadena de texto.
+        ValueError: Si el argumento `top_n` no es un número entero positivo.
+        ValueError: Si el DataFrame no contiene las columnas requeridas: ['Categoria', 'Etiqueta', 'Cargo'].
+        ValueError: Si no se encuentran datos para la categoría especificada en el DataFrame.
+
+    Ultima actualización:        8/4/2025          
+    Por:                 cemc (c)            
     """
     # Validar que 'df' sea un DataFrame
     if not isinstance(df, pd.DataFrame):
