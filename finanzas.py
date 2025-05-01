@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from flask import Flask, render_template, request
 import pandas as pd
 import matplotlib.pyplot as plt
 import xlrd
@@ -7,6 +8,78 @@ from datetime import date,datetime,time,timedelta
 import seaborn as sns
 import scipy.stats
 import numpy as np
+import mysql.connector
+import io
+import base64
+import pandas as pd
+import mysql.connector
+
+# from datetime import datetime
+import pandas as pd
+
+def gastos_ingresos(df, categories):
+    """
+    Calcula los gastos por categoría y el resumen anual de cargos e ingresos.
+
+    Parámetros:
+        df (pd.DataFrame): DataFrame con las transacciones financieras.
+        categories (dict): Diccionario de categorías para clasificar transacciones.
+
+    Retorna:
+        Data frame con resumen anual de cargos vs gastos.
+    """
+    try:
+        # Resumen anual de cargos
+        gastos = df.groupby('año')[['cargo']].sum()
+        # Resumen anual de abonos (ingresos)
+        ingresos = df.groupby('año')[['abono']].sum()
+        # resumen
+        resumen = pd.DataFrame({"año": ingresos.index, "ingresos": ingresos.abono, "gastos": gastos.cargo})        
+
+        return resumen
+
+    except Exception as e:
+        print(f"Error al calcular los gastos por categoría: {e}")
+        return None  # Devuelve None en caso de error
+
+# Procesamiento de datos en el DataFrame
+def gastos_ingresos_2(df):
+    """Agrupa datos por año y calcula ingresos y gastos."""
+    df["año"] = df["año"].astype(int)  # Asegurar que la columna 'año' es numérica
+    # Filtrar y sumar según condiciones
+    ingresos = df[df["transaccion"].str.startswith("UES:")].groupby("año")["abono"].sum()
+    gastos = df[df["transaccion"].str.startswith("SELECTOS:")].groupby("año")["cargo"].sum()
+    # Unir los resultados
+    resumen = pd.DataFrame({"año": ingresos.index, "ingresos": ingresos.values, "gastos": gastos.values})
+    return resumen
+
+# Conexión a MySQL y carga única de datos en un DataFrame
+def obtener_datos_df(host, user, psw, db, consulta):
+    """
+    Establece conexión con MySQL y carga datos en un DataFrame.
+
+    Parámetros:
+        host (str): Dirección del servidor MySQL.
+        user (str): Usuario de la base de datos.
+        password (str): Contraseña del usuario.
+        database (str): Nombre de la base de datos.
+        consulta (str): Consulta SQL para recuperar datos.
+
+    Retorna:
+        pd.DataFrame: DataFrame con los datos recuperados.
+    """
+    try:
+        # Establecer conexión con la base de datos
+        conexion = mysql.connector.connect(host=host, user=user, password=psw, database=db)
+        # Ejecutar la consulta y cargar los datos en un DataFrame
+        df = pd.read_sql(consulta, conexion)
+    except mysql.connector.Error as err:
+        print(f"Error en la conexión a MySQL: {err}")
+        df = None  # Retorna None en caso de error
+    finally:
+        if 'conexion' in locals() and conexion.is_connected():
+            conexion.close()  # Cierra la conexión
+    return df
 
 def top_subcategories(df, category, top_n=5):
     """
@@ -43,26 +116,26 @@ def top_subcategories(df, category, top_n=5):
         raise ValueError(f"El argumento 'top_n' debe ser un número entero positivo, pero se recibió: {top_n}")
     
     # Validar que las columnas requeridas existan en el DataFrame
-    required_columns = ['Categoria', 'Etiqueta', 'Cargo']
+    required_columns = ['categoria', 'etiqueta', 'cargo']
     missing_columns = [col for col in required_columns if col not in df.columns]
     if missing_columns:
         raise ValueError(f"El DataFrame no contiene las columnas requeridas: {', '.join(missing_columns)}")
     
     # Filtrar datos por la categoría específica
-    filtered_df = df[df['Categoria'] == category]
+    filtered_df = df[df['categoria'] == category]
     
     # Validar que haya datos en la categoría filtrada
     if filtered_df.empty:
         raise ValueError(f"No se encontraron datos para la categoría: {category}")
     
     # Agrupar por etiquetas y calcular el total por subcategoría
-    subcategory_totals = filtered_df.groupby('Etiqueta')['Cargo'].sum()
+    subcategory_totals = filtered_df.groupby('etiqueta')['cargo'].sum()
     
     # Obtener las subcategorías principales
     top_subcategories = subcategory_totals.nlargest(top_n).index
     
     # Devolver el DataFrame filtrado con las principales subcategorías
-    return filtered_df[filtered_df['Etiqueta'].isin(top_subcategories)]
+    return filtered_df[filtered_df['etiqueta'].isin(top_subcategories)]
 
 
 def classify_transaction(transaction, categories):
