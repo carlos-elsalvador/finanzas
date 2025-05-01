@@ -17,6 +17,11 @@ categories = {
 
 main_dir              = '/home/carlos/workbenchPython/finanzas/datos/'
 df                    = pd.read_csv(main_dir+'bac.csv', parse_dates=['Fecha_Tran'], dayfirst=True, decimal=".", thousands=',')  
+# df                    = pd.read_csv(main_dir+'bac.csv')
+
+# PREPARACION DE DATOS
+# Convertir con manejo de errores, errors="coerce" convierte valores inválidos en NaN, evitando fallos.
+df['Fecha_Tran'] = pd.to_datetime(df['Fecha_Tran'], format='%Y-%m-%d', errors='coerce')
 
 # Filtra datos anteriores a 2016 en base de datos original
 mask                  = df['Fecha_Tran'] > datetime(2016,1,1)
